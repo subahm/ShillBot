@@ -59,8 +59,39 @@ class TestWorkerBasic(unittest.TestCase):
         len_to_crawl_after = len(worker.to_crawl)
 
         self.assertEqual(len_to_crawl_after, len_to_crawl_before)
+        
+    def test_worker_invalid_URL(self):
+        worker = BasicUserParseWorker("http://kfjdjdsytdggdttfhbgu.com/")
+        self.assertRaises(WorkerException,worker.run)
 
+	def test_worker_send_to_mother(self):
+        data = "some data"
+        root = "some root"
+        
+        s = socket.socket()
+        addr = (settings.MOTHERSHIP['host'], settings.MOTHERSHIP['port'])
+        s.bind(addr)
+        s.listen(5)
 
+        worker.send_to_mother(data, root)
+
+        worker, address = s.accept()
+        data = worker.recv(1024)
+
+        self.assertEqual(data['data'], data)
+        self.assertEqual(data['root'], root)
+
+        worker.close()
+        s.close()
+        
+    def test_worker_add_empty_list_links(self):
+        worker = BasicUserParseWorker("https://www.reddit.com/user/Chrikelnel")
+        
+        before = len(worker.to_crawl)
+        worker.add_links([])
+        after = len(worker.to_crawl)
+        
+        self.assertEqual(before_links, after_links)
 
 
 
